@@ -1,7 +1,6 @@
 import _opts from './utils/default-options';
 import Modal from './utils/modal-class';
 import CONST from './utils/constants';
-import { containEl, modalBackdrop, modalEl } from './utils/templates';
 
 // set the default options
 let defaultOptions = Object.assign({}, _opts);
@@ -17,11 +16,31 @@ export class ModalService {
 	constructor(opts={}) {
 		this._options = defaultOptions = Object.assign(defaultOptions, opts);
 		this._modals = [];
+		this.body = document.body;
 		this.init();
 	};
 	
 	init() {
-		
+		// modal-backdrop
+		this.modalBackdropEl = document.createElement('div');
+		this.modalBackdropEl.classList.add(CONST.MODAL_BACKDROP);
+
+		// modal-contain
+		this.modalContainEl = document.createElement('div');
+		this.modalContainEl.classList.add(CONST.MODAL_CONTAIN);
+
+		// modal
+		this.modalEl = document.createElement('div');
+		this.modalEl.classList.add(CONST.MODAL);
+
+		// append
+		this.body.appendChild(this.modalBackdropEl);
+		this.modalContainEl.appendChild(this.modalEl);
+		this.body.appendChild(this.modalContainEl);
+
+		// apply option classes
+		this.modalEl.classList.add(CONST.size[this._options.size]);
+		this.modalContainEl.classList.add(CONST.display[this._options.display]);
 	}
 	
 	destroy() {
@@ -30,12 +49,11 @@ export class ModalService {
 
 	/**
 	 * create and open a new modal
-	 * @param params
 	 * @param opts
 	 * @returns {*} ModalClass
 	 */
-	open(params, opts) {
-		let newModal = new Modal(params, Object.assign(defaultOptions, opts));
+	open(opts) {
+		let newModal = new Modal(Object.assign(defaultOptions, opts));
 		this._modals.push(newModal);
 		return newModal;
 	}

@@ -38,32 +38,27 @@ export function guid() {
  * @param options
  */
 export function validateOptions(options) {
-	// force medium default when an unknown value is supplied
-	if (options.size != 'small' && options.size != 'medium' && options.size != 'large') {
-		console.warn(`[Modal Warning] ${options.size ? options.size : 'Unknown'} is not a valid size - defaulting to "medium" (small|medium|large)`);
-	}
-	// force 'scroll' default when an unknown display is supplied
-	if (options.display != 'scroll' & options.display != 'center') {
-		console.warn(`[Modal Warning] ${options.display ? options.display : 'Unknown'} is not a valid display type - defaulting to "scroll" (scroll|center)`);
-	}
-	return options;
-}
-
-/**
- * validate parameters
- * @param params
- */
-export function validateParams(params) {
-
 	// template or templateUrl is required
-	if (!params.template && !params.templateUrl) {
+	if (!options.template && !options.templateUrl) {
 		throw `[Modal Error] Component requires param "template" or "templateUrl"`;
 	}
 
 	// if both template and templateUrl are present, give warning that 'template' will be used
-	if (params.templateUrl && params.template) {
+	if (options.templateUrl && options.template) {
 		delete params.templateUrl;
 		console.warn(`[Modal Warning] Using "template" as default when both "template" and "templateUrl" params are supplied`);
 	}
-	return params;
+
+	// force medium default when an unknown value is supplied
+	if (options.size != 'small' && options.size != 'medium' && options.size != 'large') {
+		console.warn(`[Modal Warning] ${options.size ? options.size : 'Unknown'} is not a valid size - defaulting to "medium" (small|medium|large)`);
+		options.size = 'medium';
+	}
+	// force 'scroll' default when an unknown display is supplied
+	if (options.display != 'scroll' & options.display != 'center') {
+		console.warn(`[Modal Warning] ${options.display ? options.display : 'Unknown'} is not a valid display type - defaulting to "scroll" (scroll|center)`);
+		options.display = 'scroll';
+	}
+
+	return options;
 }
