@@ -12,7 +12,7 @@ var config = {
 		loaders: [
 			{
 				test: /\.js$/,
-				loader: 'babel?presets[]=es2015',
+				loader: 'ng-annotate!babel?presets[]=es2015',
 				exclude: [/node_modules/, /lib/]
 			},
 			{
