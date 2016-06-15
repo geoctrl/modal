@@ -1,6 +1,5 @@
 import defaultOptions from './_default-options';
-import angular from 'angular';
-const label =  `[tsModalService]`;
+export const label =  `[tsModalService]`;
 
 /**
  * create guid
@@ -33,6 +32,10 @@ export function guid() {
 						); // replace
 			}
 	)();
+}
+
+export function dashCase(str) {
+	return str.replace(/([A-Z])/g, function($1){return "-"+$1.toLowerCase()});
 }
 
 
@@ -83,13 +86,14 @@ export function cleanValidateOptions(options, $injector) {
 
 export function resolve($q, obj) {
 	let promises = [];
+	let names = [];
 
 	for (let r in obj) {
 
 		if (typeof obj[r] !== 'function') {
 			throw `${label} resolve must return object of functions`;
 		} else {
-
+			names.push(r);
 			let deferred = $q(resolve => {
 				resolve(obj[r]())
 			});
@@ -98,5 +102,13 @@ export function resolve($q, obj) {
 		}
 	}
 
-	return $q.all(promises);
+	return $q.all(promises).then(
+			res => {
+				let o = {};
+				for (let i=0; i < res.length; i++) {
+					o[names[i]] = res[i];
+				}
+				return o;
+			}
+	);
 }

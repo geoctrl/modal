@@ -4,6 +4,8 @@ import './ts-modal/ts-modal.scss';
 // require vendor dependencies
 import angular from 'angular';
 
+import 'velocity-animate';
+
 // modal
 import './ts-modal';
 
@@ -21,41 +23,92 @@ app.controller('appCtrl', function($scope, tsModalService, $q) {
 		tsModalService.open({
 			directive: 'testDir',
 			resolve: {
-				func: function() {
-					return {data: 'this is data'}
+				file: function() {
+					return 'super-duper.css'
 				},
-				promise: function() {
-					return $q(resolve => {
-						setTimeout(function() {
-							resolve({data: 'this is promise data'})
-						}, 1000)
-					})
+				camelCase: function() {
+					return {data: 'sup'}
 				}
 			}
-		});
+		}).then(
+				submit => {
+					console.log('submitted', submit)
+				},
+				cancel => {
+					console.log('cancelled', cancel)
+				}
+		);
 	};
 
-	$scope.open();
 });
 
 app.directive('testDir', function() {
 	return {
-		controller: function(tsModalService) {
-			
-			
+		scope: {
+			file: '=',
+			camelCase: '='
+		},
+		controller: function($scope, tsModalService) {
+			$scope.submit = () => {
+				tsModalService.open({
+					directive: 'areYouSure'
+				}).then(
+						yes => {
+							tsModalService.submit({data: 'submitted'});
+						}
+				)
+			};
+
+			$scope.cancel = () => {
+				tsModalService.cancel({data: 'cancelled'});
+			};
 
 		},
 		template:
 		`
 			<div>
 				<div class="modal__header">
-					This is the header
+					Delete File
 				</div>
 				<div class="modal__body">
-					this is the body
+					Are you sure you want to delete {{file}}?
 				</div>
 				<div class="modal__footer">
-					<button>Submit</button>
+					<button ng-click="submit()">Yes</button>
+					<button ng-click="cancel()">No</button>
+				</div>
+			</div>
+		`
+	}
+});
+
+app.directive('areYouSure', function() {
+	return {
+		scope: {
+			data: '='
+		},
+		controller: function($scope, tsModalService) {
+
+			$scope.submit = () => {
+				tsModalService.submit({data: 'submitted'});
+			};
+
+			$scope.cancel = () => {
+				tsModalService.cancel({data: 'cancelled'});
+			};
+		},
+		template:
+				`
+			<div>
+				<div class="modal__header">
+					Are you sure?
+				</div>
+				<div class="modal__body">
+					This confirms the thing you were just confirming. Just in case...
+				</div>
+				<div class="modal__footer">
+					<button ng-click="submit()">For Reals</button>
+					<button ng-click="cancel()">I changed my mind!!!</button>
 				</div>
 			</div>
 		`

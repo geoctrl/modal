@@ -5,7 +5,7 @@
   "main": "dist/bundle.js",
   "scripts": {
     "mock-api": "nodemon dev-server/server.js --watch dev-server",
-    "start": "NODE_ENV=development webpack-dev-server --content-base app --inline",
+    "start": "NODE_ENV=development webpack-dev-server --content-base app --inline --hot",
     "build": "NODE_ENV=production webpack",
     "deploy": ""
   },
@@ -16,7 +16,8 @@
   "author": "",
   "license": "copyright",
   "dependencies": {
-    "angular": "^1.5.6"
+    "angular": "^1.5.6",
+    "velocity-animate": "^1.2.3"
   },
   "devDependencies": {
     "autoprefixer": "^6.3.6",

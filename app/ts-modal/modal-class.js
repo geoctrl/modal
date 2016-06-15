@@ -15,9 +15,12 @@ export default class {
 		this._options = cleanValidateOptions(opts, $injector);
 		this._id = guid();
 	}
-
-	then() {
-
+	
+	setPromise(defer) {
+		this._defer = defer;
 	}
 
+	getPromise() {
+		return this._defer;
+	}
 }

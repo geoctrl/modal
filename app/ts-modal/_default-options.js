@@ -41,6 +41,13 @@ export default {
 	 * whether to animate the modal
 	 * @type boolean
 	 */
-	animate: true
+	animate: true,
+
+	/**
+	 * animateDuration
+	 * duration of animation
+	 * @type int
+	 */
+	animateDuration: 400
 
 };
