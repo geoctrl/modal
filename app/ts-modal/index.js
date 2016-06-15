@@ -87,6 +87,9 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 			el: newModalEl
 		});
 
+		// create click event for containEl
+		newModalContainEl[0].addEventListener('click', clickEventHandler);
+
 		// build modal elements
 		newModalEl.append(directiveEl);
 		newModalContainEl.append(newModalEl);
@@ -128,7 +131,7 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 				complete: function() {
 					if (isInit) {
 						addEvents();
-						setFocus(modal.el);
+						setFocus(modal.containEl);
 					}
 					isInit = false;
 				}
@@ -151,6 +154,8 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	function controlOut(modal) {
 
 		backdropEl[0].style.zIndex = (modalArray.length*2)-2;
+		modal.containEl[0].removeEventListener('click', clickEventHandler);
+
 
 		if (modal.data._options.animate && Velocity) {
 			Velocity(modal.el, {
@@ -194,8 +199,9 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 		}
 	}
 
-	function backdropEventHandler() {
-		if (modalArray[modalArray.length-1].data._options.closeBackdrop && !isInit) {
+	function clickEventHandler(e) {
+		let modal = modalArray[modalArray.length-1];
+		if (e.target == modal.containEl[0] && modal.data._options.closeBackdrop && !isInit) {
 			cancel();
 		}
 	}
@@ -226,12 +232,10 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	}
 
 	function addEvents() {
-		backdropEl[0].addEventListener('click', backdropEventHandler);
 		$document[0].addEventListener('keydown', keyPressHandler);
 	}
 
 	function removeEvents() {
-		backdropEl[0].removeEventListener('click', backdropEventHandler);
 		$document[0].removeEventListener('keydown', keyPressHandler);
 	}
 
@@ -270,10 +274,6 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 			}
 
 			return newModal.getPromise().promise;
-		},
-
-		getData() {
-			return angular.copy(modalArray[modalArray.length-1].data.getData());
 		},
 
 		submit: submit,

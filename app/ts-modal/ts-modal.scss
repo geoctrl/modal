@@ -25,7 +25,7 @@
 	right: 0;
 	bottom: 0;
 	margin: 0 auto;
-	overflow: auto;
+	overflow-y: scroll;
 
 	&:focus {
 		box-shadow: none;
