@@ -44,6 +44,10 @@
 		width: 700px;
 	}
 
+	&.modal-contain--notification .modal {
+		margin-bottom: 40px;
+	}
+
 	&.modal-contain--component .modal {
 		position: relative;
 		border-radius: 4px;
@@ -56,7 +60,7 @@
 	margin-left: auto;
 	margin-right: auto;
 	display: none;
-	opacity: .5;
+	opacity: .6;
 	transform: translate(0, -120%);
 	box-shadow: 0 3px 6px rgba(0,0,0,0.06), 0 3px 6px rgba(0,0,0,0.13);
 	background-color: #fff;
@@ -77,8 +81,4 @@
 .modal__footer {
 	text-align: right;
 	padding: 20px;
-}
-
-body.body--has-modal {
-	overflow: hidden;
 }

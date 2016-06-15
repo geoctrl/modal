@@ -1,3 +1,5 @@
+// require app styles
+import './ts-modal.scss';
 
 import { resolve, dashCase, label, getScrollbarWidth } from './_utils';
 import modalClass from './modal-class';
@@ -29,7 +31,6 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	// store data here
 	$scope.data = {};
 
-
 	/**
 	 * initialize
 	 * no modals present, build structure
@@ -47,7 +48,6 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	function destroy() {
 		containerEl[0].style.display = 'none';
 		modalArray = [];
-
 		isInit = true;
 		isDestroy = false;
 	}
@@ -106,12 +106,17 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	 */
 	function controlIn(modal) {
 
+		// set backdrop z-index
 		backdropEl[0].style.zIndex = (modalArray.length*2)-2;
-		modal.el[0].style.display = 'block';
 
+		// display some elements
+		modal.el[0].style.display = 'block';
+		containerEl[0].style.display = 'block';
+
+		// if animation is available and set to true
 		if (modal.data._options.animate && Velocity) {
 			if (isInit) {
-				containerEl[0].style.display = 'block';
+				// if this is the first modal, fade in the backdrop
 				Velocity(backdropEl, {
 					opacity: [1, 0]
 				}, {
@@ -137,7 +142,6 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 				}
 			})
 		} else {
-			containerEl[0].style.display = 'block';
 			backdropEl[0].style.display = 'block';
 			setFocus(modal.containEl);
 
@@ -159,7 +163,7 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 
 		if (modal.data._options.animate && Velocity) {
 			Velocity(modal.el, {
-				opacity: .5,
+				opacity: .6,
 				translateY: `-100%`
 			}, {
 				display: 'none',

@@ -19,25 +19,36 @@ var config = {
 				test: /.html$/,
 				loader: 'raw',
 				exclude: [/node_modules/, /lib/]
-			},
-			{
-				test: /.scss$/,
-				loader: 'style!css!postcss-loader!sass',
-				exclude: [/node_modules/, /lib/]
 			}
 		]
 	},
 	postcss: function() {
 		return [require('autoprefixer')];
-	}
+	},
+	plugins: []
 };
 
 if (process.env.NODE_ENV === 'development') {
+	config.module.loaders.push({
+		test: /.scss$/,
+		loader: 'style!css!postcss-loader!sass',
+		exclude: [/node_modules/, /lib/]
+	})
+
 }
 
 if (process.env.NODE_ENV === 'production') {
-	config.entry = path.resolve(__dirname, 'app', 'modal.js');
+	config.module.loaders.push({
+		test: /.scss$/,
+		loader: ExtractTextPlugin.extract('css!postcss-loader!sass'),
+		exclude: [/node_modules/, /lib/]
+	});
+
+	config.plugins.push(new ExtractTextPlugin("ts-modal.css"));
+
+	config.entry = path.resolve(__dirname, 'app', 'ts-modal', 'index.js');
 	config.output.path = path.resolve(__dirname, 'dist');
+	config.output.filename = 'ts-modal.js';
 	config.output.libraryTarget = 'umd';
 	config.devtool = 'source-map';
 	// config.plugins.push(new webpack.optimize.UglifyJsPlugin());

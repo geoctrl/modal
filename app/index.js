@@ -1,6 +1,3 @@
-// require app styles
-import './ts-modal/ts-modal.scss';
-
 // require vendor dependencies
 import angular from 'angular';
 
@@ -22,7 +19,6 @@ app.controller('appCtrl', function($scope, tsModalService, $q) {
 	$scope.open = () => {
 		tsModalService.open({
 			directive: 'testDir',
-			display: 'component',
 			resolve: {
 				file: function() {
 					return 'super-duper.css'
