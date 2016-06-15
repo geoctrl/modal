@@ -71,16 +71,39 @@ export function cleanValidateOptions(options, $injector) {
 	}
 
 	// display
-	// force 'component' default when an unknown display is supplied
+	// force 'notification' default when an unknown display is supplied
 	if (options.display != 'component' & options.display != 'notification') {
-		console.warn(`${label} ${options.display ? options.display : 'Unknown'} is not a valid display type - defaulting to "component" (component|notification)`);
+		console.warn(`${label} ${options.display ? options.display : 'Unknown'} is not a valid display type - defaulting to "notification" (component|notification)`);
 		options.display = 'scroll';
 	}
 
 	return options;
 }
 
+export function getScrollbarWidth() {
+	var outer = document.createElement("div");
+	outer.style.visibility = "hidden";
+	outer.style.width = "100px";
+	outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
 
+	document.body.appendChild(outer);
+
+	var widthNoScroll = outer.offsetWidth;
+	// force scrollbars
+	outer.style.overflow = "scroll";
+
+	// add innerdiv
+	var inner = document.createElement("div");
+	inner.style.width = "100%";
+	outer.appendChild(inner);
+
+	var widthWithScroll = inner.offsetWidth;
+
+	// remove divs
+	outer.parentNode.removeChild(outer);
+
+	return widthNoScroll - widthWithScroll;
+}
 
 
 

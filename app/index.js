@@ -22,6 +22,7 @@ app.controller('appCtrl', function($scope, tsModalService, $q) {
 	$scope.open = () => {
 		tsModalService.open({
 			directive: 'testDir',
+			display: 'component',
 			resolve: {
 				file: function() {
 					return 'super-duper.css'
@@ -72,6 +73,26 @@ app.directive('testDir', function() {
 				</div>
 				<div class="modal__body">
 					Are you sure you want to delete {{file}}?
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
+					<p>hey</p>
 				</div>
 				<div class="modal__footer">
 					<button ng-click="submit()">Yes</button>

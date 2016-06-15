@@ -1,5 +1,5 @@
 
-import { resolve, dashCase, label } from './_utils';
+import { resolve, dashCase, label, getScrollbarWidth } from './_utils';
 import modalClass from './modal-class';
 
 // set ng module
@@ -22,7 +22,9 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 			body = angular.element($document[0].body),
 			containerEl = angular.element(`<div class="modal-container"></div>`),
 			backdropEl = angular.element(`<div class="modal-backdrop"></div>`),
+			modalContainEl = angular.element(`<div class="modal-contain" tabindex="0"></div>`),
 			modalEl = angular.element(`<div class="modal"></div>`);
+
 
 	// store data here
 	$scope.data = {};
@@ -35,9 +37,6 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	function init() {
 		containerEl.append(backdropEl);
 		body.append(containerEl);
-
-		backdropEl[0].addEventListener('click', backdropEventHandler);
-		$document[0].addEventListener('keypress', keyPressHandler);
 	}
 
 	/**
@@ -63,7 +62,8 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 		$scope.data[modal._id] = data;
 
 		// create new element
-		let newModalEl = angular.copy(modalEl),
+		let newModalContainEl = angular.copy(modalContainEl),
+				newModalEl = angular.copy(modalEl),
 				directiveEl = angular.element(`<${dashCase(modal._options.directive)}></${dashCase(modal._options.directive)}>`);
 
 		// apply data to directive
@@ -72,19 +72,26 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 		});
 
 		// set size
-		newModalEl.addClass(`modal--${modal._options.size}`);
-		newModalEl[0].style.zIndex = (modalArray.length*2)+1;
+		newModalContainEl.addClass(`modal-contain--${modal._options.size}`);
+
+		// set display
+		newModalContainEl.addClass(`modal-contain--${modal._options.display}`);
+
+		// set z-index
+		newModalContainEl[0].style.zIndex = (modalArray.length*2)+1;
 
 		// add modal to modal array
 		modalArray.push({
 			data: modal,
-			element: newModalEl
+			containEl: newModalContainEl,
+			el: newModalEl
 		});
 
 		// build modal elements
 		newModalEl.append(directiveEl);
-		containerEl.append(newModalEl);
-		$compile(newModalEl)($scope);
+		newModalContainEl.append(newModalEl);
+		containerEl.append(newModalContainEl);
+		$compile(newModalContainEl)($scope);
 
 		// show
 		controlIn(modalArray[modalArray.length-1]);
@@ -96,7 +103,8 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	 */
 	function controlIn(modal) {
 
-		backdropEl[0].style.zIndex = (modalArray.length*2)-1;
+		backdropEl[0].style.zIndex = (modalArray.length*2)-2;
+		modal.el[0].style.display = 'block';
 
 		if (modal.data._options.animate && Velocity) {
 			if (isInit) {
@@ -110,22 +118,25 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 				});
 			}
 
-			Velocity(modal.element, {
-				opacity: [1, .5],
+			Velocity(modal.el, {
+				opacity: 1,
 				translateY: [0, `-100%`]
 			}, {
 				delay: 100,
-				display: 'block',
 				easing: 'easeOutCubic',
 				duration: modal.data._options.animateDuration,
 				complete: function() {
+					if (isInit) {
+						addEvents();
+						setFocus(modal.el);
+					}
 					isInit = false;
 				}
 			})
 		} else {
 			containerEl[0].style.display = 'block';
 			backdropEl[0].style.display = 'block';
-			modal.element[0].style.display = 'block';
+			setFocus(modal.containEl);
 
 			if (modal.data._options.animate && !Velocity) {
 				console.warn(`${label} Velocity library is not available - cannot animate`);
@@ -139,10 +150,10 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 	 */
 	function controlOut(modal) {
 
-		backdropEl[0].style.zIndex = (modalArray.length*2)-1;
+		backdropEl[0].style.zIndex = (modalArray.length*2)-2;
 
 		if (modal.data._options.animate && Velocity) {
-			Velocity(modal.element, {
+			Velocity(modal.el, {
 				opacity: .5,
 				translateY: `-100%`
 			}, {
@@ -150,7 +161,7 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 				easing: 'easeInOutQuad',
 				duration: modal.data._options.animateDuration,
 				complete: function() {
-					modal.element.remove();
+					modal.containEl.remove();
 				}
 			});
 			if (isDestroy) {
@@ -166,7 +177,7 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 				});
 			}
 		} else {
-			modal.element.remove();
+			modal.containEl.remove();
 			if (isDestroy) {
 				backdropEl[0].style.display = 'none';
 				destroy();
@@ -177,8 +188,10 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 		}
 	}
 
-	function keyPressHandler() {
-
+	function keyPressHandler(e) {
+		if (e.keyCode == 27) {
+			cancel();
+		}
 	}
 
 	function backdropEventHandler() {
@@ -189,17 +202,19 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 
 	function go(data, type) {
 		let modal = modalArray[modalArray.length-1];
-		if (modalArray.length==1) {
-			isDestroy = true;
-			removeEvents();
+		if (modal) {
+			if (modalArray.length==1) {
+				isDestroy = true;
+				removeEvents();
+			}
+			modalArray.pop();
+			if (type == 'submit') {
+				modal.data.getPromise().resolve(data);
+			} else {
+				modal.data.getPromise().reject(data);
+			}
+			controlOut(modal);
 		}
-		modalArray.pop();
-		if (type == 'submit') {
-			modal.data.getPromise().resolve(data);
-		} else {
-			modal.data.getPromise().reject(data);
-		}
-		controlOut(modal);
 	}
 
 	function cancel(data) {
@@ -210,9 +225,23 @@ app.service('tsModalService', function($rootScope, $document, $compile, $injecto
 		go(data, 'submit');
 	}
 
+	function addEvents() {
+		backdropEl[0].addEventListener('click', backdropEventHandler);
+		$document[0].addEventListener('keydown', keyPressHandler);
+	}
+
 	function removeEvents() {
 		backdropEl[0].removeEventListener('click', backdropEventHandler);
-		$document[0].removeEventListener('keypress', keyPressHandler);
+		$document[0].removeEventListener('keydown', keyPressHandler);
+	}
+
+	function setFocus(el) {
+		var inputWithAutofocus = el[0].querySelector('[autofocus]');
+		if (inputWithAutofocus) {
+			inputWithAutofocus.focus();
+		} else {
+			el[0].focus();
+		}
 	}
 
 

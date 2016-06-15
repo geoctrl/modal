@@ -13,7 +13,7 @@ export default {
 	 * decides the display type
 	 * @type string (component|notification)
 	 */
-	display: 'component',
+	display: 'notification',
 
 	/**
 	 * backdrop
