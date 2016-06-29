@@ -1,12 +1,12 @@
 {
-  "name": "modal",
-  "version": "0.0.1",
+  "name": "ts-modal",
+  "version": "0.0.4",
   "description": "",
-  "main": "dist/ts-modal.js",
+  "main": "dist/index.js",
   "scripts": {
     "mock-api": "nodemon dev-server/server.js --watch dev-server",
     "start": "NODE_ENV=development webpack-dev-server --content-base app --inline --hot",
-    "build": "NODE_ENV=production webpack",
+	  "build": "NODE_ENV=production webpack && cp app/ts-modal/ts-modal.scss dist/_ts-modal.scss",
     "deploy": ""
   },
   "repository": {

@@ -51,11 +51,11 @@ export function cleanValidateOptions(options, $injector) {
 	if (typeof options !== 'object' || !options.directive) {
 		throw `${label} directive property is required`;
 
-	// check if directive is a string
+		// check if directive is a string
 	} else if (typeof options.directive !== 'string') {
 		throw `${label} directive must be a string`;
 
-	// check if directive is available in ng module
+		// check if directive is available in ng module
 	} else if (!$injector.has(options.directive + 'Directive')) {
 		throw `${label} ${options.directive} is not a valid directive`;
 	}
@@ -80,48 +80,21 @@ export function cleanValidateOptions(options, $injector) {
 	return options;
 }
 
-export function getScrollbarWidth() {
-	var outer = document.createElement("div");
-	outer.style.visibility = "hidden";
-	outer.style.width = "100px";
-	outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
-
-	document.body.appendChild(outer);
-
-	var widthNoScroll = outer.offsetWidth;
-	// force scrollbars
-	outer.style.overflow = "scroll";
-
-	// add innerdiv
-	var inner = document.createElement("div");
-	inner.style.width = "100%";
-	outer.appendChild(inner);
-
-	var widthWithScroll = inner.offsetWidth;
-
-	// remove divs
-	outer.parentNode.removeChild(outer);
-
-	return widthNoScroll - widthWithScroll;
-}
-
-
 
 export function resolve($q, obj) {
 	let promises = [];
 	let names = [];
 
 	for (let r in obj) {
-
-		if (typeof obj[r] !== 'function') {
-			throw `${label} resolve must return object of functions`;
-		} else {
-			names.push(r);
-			let deferred = $q(resolve => {
+		names.push(r);
+		if (typeof obj[r] === 'function') {
+			promises.push($q(resolve => {
 				resolve(obj[r]())
-			});
-
-			promises.push(deferred);
+			}));
+		} else {
+			promises.push($q(resolve => {
+				resolve(obj[r]);
+			}))
 		}
 	}
 

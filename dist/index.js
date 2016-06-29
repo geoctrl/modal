@@ -56,31 +56,37 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	__webpack_require__(1);
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
 	
-	var _utils = __webpack_require__(3);
+	exports.default = function (app) {
+		app.service('tsModalService', _tsModalSvc2.default);
+	};
 	
-	var _modalClass = __webpack_require__(5);
+	var _tsModalSvc = __webpack_require__(1);
 	
-	var _modalClass2 = _interopRequireDefault(_modalClass);
+	var _tsModalSvc2 = _interopRequireDefault(_tsModalSvc);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/***/ },
+/* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
 	
-	// set ng module
-	var app = angular.module('ts.modal', []);
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
 	
-	/**
-	 * tsModalService
-	 */
-	// require app styles
-	app.service('tsModalService', ["$rootScope", "$document", "$compile", "$injector", "$q", function ($rootScope, $document, $compile, $injector, $q) {
+	exports.default = ["$rootScope", "$document", "$compile", "$injector", "$q", "$timeout", function ($rootScope, $document, $compile, $injector, $q, $timeout) {
 		"ngInject";
 	
 		// variables
 	
-		var $scope = $rootScope.$new(),
+		var $scope = void 0,
 		    modalArray = [],
-		    stash = {},
 		    isInit = true,
 		    isDestroy = false,
 	
@@ -92,8 +98,9 @@ return /******/ (function(modules) { // webpackBootstrap
 		    modalContainEl = angular.element('<div class="modal-contain" tabindex="0"></div>'),
 		    modalEl = angular.element('<div class="modal"></div>');
 	
-		// store data here
-		$scope.data = {};
+		function currentModal() {
+			return modalArray[modalArray.length - 1];
+		}
 	
 		/**
 	  * initialize
@@ -109,11 +116,35 @@ return /******/ (function(modules) { // webpackBootstrap
 	  * done with modals, clean up
 	  * assumes only one modal is left
 	  */
-		function destroy() {
-			containerEl[0].style.display = 'none';
-			modalArray = [];
-			isInit = true;
-			isDestroy = false;
+		function destroy(modal) {
+			var finalDestroy = function finalDestroy() {
+				containerEl[0].style.display = 'none';
+				modalArray = [];
+				isInit = true;
+				isDestroy = false;
+				$scope.$destroy();
+				$scope = null;
+			};
+	
+			if (modal.data._options.animate && Velocity) {
+				Velocity(backdropEl, {
+					opacity: 0
+				}, {
+					display: 'none',
+					easing: 'easeInOutQuad',
+					duration: modal.data._options.animateDuration,
+					complete: function complete() {
+						if ($scope) {
+							finalDestroy();
+						}
+					}
+				});
+			} else {
+				backdropEl[0].style.display = 'none';
+				if ($scope) {
+					finalDestroy();
+				}
+			}
 		}
 	
 		/**
@@ -122,6 +153,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	  * @param data
 	  */
 		function buildModal(modal, data) {
+	
+			// if data isn't set
+			data = data || {};
+	
+			// add modal helpers to facilitate third-party component quirks
+			data.tsModalReady = false; // modal is initiated and animation is complete
+	
 			// set data
 			$scope.data[modal._id] = data;
 	
@@ -161,7 +199,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			$compile(newModalContainEl)($scope);
 	
 			// show
-			controlIn(modalArray[modalArray.length - 1]);
+			controlIn(currentModal());
 		}
 	
 		/**
@@ -174,7 +212,6 @@ return /******/ (function(modules) { // webpackBootstrap
 			backdropEl[0].style.zIndex = modalArray.length * 2 - 2;
 	
 			// display some elements
-			modal.el[0].style.display = 'block';
 			containerEl[0].style.display = 'block';
 	
 			// if animation is available and set to true
@@ -191,9 +228,10 @@ return /******/ (function(modules) { // webpackBootstrap
 				}
 	
 				Velocity(modal.el, {
-					opacity: 1,
-					translateY: [0, '-100%']
+					opacity: [1, .5],
+					translateY: [0, '-120%']
 				}, {
+					display: 'block',
 					delay: 100,
 					easing: 'easeOutCubic',
 					duration: modal.data._options.animateDuration,
@@ -203,9 +241,14 @@ return /******/ (function(modules) { // webpackBootstrap
 							setFocus(modal.containEl);
 						}
 						isInit = false;
+						// set modal to ready
+						$scope.$applyAsync(function () {
+							$scope.data[modal.data._id].tsModalReady = true;
+						});
 					}
 				});
 			} else {
+				modal.el[0].style.display = 'block';
 				backdropEl[0].style.display = 'block';
 				setFocus(modal.containEl);
 	
@@ -224,10 +267,20 @@ return /******/ (function(modules) { // webpackBootstrap
 			backdropEl[0].style.zIndex = modalArray.length * 2 - 2;
 			modal.containEl[0].removeEventListener('click', clickEventHandler);
 	
+			// wait for duration/2 to see if another modal is starting
+			// if not, destroy
+			$timeout(function () {
+				if (!modalArray.length) {
+					isDestroy = true;
+					removeEvents();
+					destroy(modal);
+				}
+			}, modal.data._options.animateDuration / 2);
+	
 			if (modal.data._options.animate && Velocity) {
 				Velocity(modal.el, {
 					opacity: .6,
-					translateY: '-100%'
+					translateY: '-120%'
 				}, {
 					display: 'none',
 					easing: 'easeInOutQuad',
@@ -236,24 +289,8 @@ return /******/ (function(modules) { // webpackBootstrap
 						modal.containEl.remove();
 					}
 				});
-				if (isDestroy) {
-					Velocity(backdropEl, {
-						opacity: 0
-					}, {
-						display: 'none',
-						easing: 'easeInOutQuad',
-						duration: modal.data._options.animateDuration,
-						complete: function complete() {
-							destroy();
-						}
-					});
-				}
 			} else {
 				modal.containEl.remove();
-				if (isDestroy) {
-					backdropEl[0].style.display = 'none';
-					destroy();
-				}
 				if (modal.data._options.animate && !Velocity) {
 					console.warn(_utils.label + ' Velocity library is not available - cannot animate');
 				}
@@ -261,25 +298,21 @@ return /******/ (function(modules) { // webpackBootstrap
 		}
 	
 		function keyPressHandler(e) {
-			if (e.keyCode == 27) {
+			if (e.keyCode == 27 && currentModal().data._options.closeEscape) {
 				cancel();
 			}
 		}
 	
 		function clickEventHandler(e) {
-			var modal = modalArray[modalArray.length - 1];
+			var modal = currentModal();
 			if (e.target == modal.containEl[0] && modal.data._options.closeBackdrop && !isInit) {
 				cancel();
 			}
 		}
 	
 		function go(data, type) {
-			var modal = modalArray[modalArray.length - 1];
+			var modal = currentModal();
 			if (modal) {
-				if (modalArray.length == 1) {
-					isDestroy = true;
-					removeEvents();
-				}
 				modalArray.pop();
 				if (type == 'submit') {
 					modal.data.getPromise().resolve(data);
@@ -320,6 +353,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  */
 		return {
 			open: function open(opts) {
+				if (!$scope) {
+					$scope = $rootScope.$new();
+					$scope.data = {};
+				}
 	
 				// create new modal
 				var newModal = new _modalClass2.default(opts, $injector);
@@ -344,17 +381,20 @@ return /******/ (function(modules) { // webpackBootstrap
 			submit: submit,
 			cancel: cancel
 		};
-	}]);
+	}];
+	
+	var _utils = __webpack_require__(2);
+	
+	var _modalClass = __webpack_require__(4);
+	
+	var _modalClass2 = _interopRequireDefault(_modalClass);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	;
 
 /***/ },
-/* 1 */
-/***/ function(module, exports) {
-
-	// removed by extract-text-webpack-plugin
-
-/***/ },
-/* 2 */,
-/* 3 */
+/* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -369,10 +409,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.guid = guid;
 	exports.dashCase = dashCase;
 	exports.cleanValidateOptions = cleanValidateOptions;
-	exports.getScrollbarWidth = getScrollbarWidth;
 	exports.resolve = resolve;
 	
-	var _defaultOptions = __webpack_require__(4);
+	var _defaultOptions = __webpack_require__(3);
 	
 	var _defaultOptions2 = _interopRequireDefault(_defaultOptions);
 	
@@ -454,46 +493,20 @@ return /******/ (function(modules) { // webpackBootstrap
 		return options;
 	}
 	
-	function getScrollbarWidth() {
-		var outer = document.createElement("div");
-		outer.style.visibility = "hidden";
-		outer.style.width = "100px";
-		outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
-	
-		document.body.appendChild(outer);
-	
-		var widthNoScroll = outer.offsetWidth;
-		// force scrollbars
-		outer.style.overflow = "scroll";
-	
-		// add innerdiv
-		var inner = document.createElement("div");
-		inner.style.width = "100%";
-		outer.appendChild(inner);
-	
-		var widthWithScroll = inner.offsetWidth;
-	
-		// remove divs
-		outer.parentNode.removeChild(outer);
-	
-		return widthNoScroll - widthWithScroll;
-	}
-	
 	function resolve($q, obj) {
 		var promises = [];
 		var names = [];
 	
 		var _loop = function _loop(r) {
-	
-			if (typeof obj[r] !== 'function') {
-				throw label + ' resolve must return object of functions';
-			} else {
-				names.push(r);
-				var deferred = $q(function (resolve) {
+			names.push(r);
+			if (typeof obj[r] === 'function') {
+				promises.push($q(function (resolve) {
 					resolve(obj[r]());
-				});
-	
-				promises.push(deferred);
+				}));
+			} else {
+				promises.push($q(function (resolve) {
+					resolve(obj[r]);
+				}));
 			}
 		};
 	
@@ -511,7 +524,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 4 */
+/* 3 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -573,7 +586,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 5 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -584,7 +597,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _utils = __webpack_require__(3);
+	var _utils = __webpack_require__(2);
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -632,4 +645,4 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ ])
 });
 ;
-//# sourceMappingURL=ts-modal.js.map
+//# sourceMappingURL=index.js.map

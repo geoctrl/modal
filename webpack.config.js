@@ -38,17 +38,10 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 if (process.env.NODE_ENV === 'production') {
-	config.module.loaders.push({
-		test: /.scss$/,
-		loader: ExtractTextPlugin.extract('css!postcss-loader!sass'),
-		exclude: [/node_modules/, /lib/]
-	});
-
-	config.plugins.push(new ExtractTextPlugin("ts-modal.css"));
 
 	config.entry = path.resolve(__dirname, 'app', 'ts-modal', 'index.js');
 	config.output.path = path.resolve(__dirname, 'dist');
-	config.output.filename = 'ts-modal.js';
+	config.output.filename = 'index.js';
 	config.output.libraryTarget = 'umd';
 	config.devtool = 'source-map';
 	// config.plugins.push(new webpack.optimize.UglifyJsPlugin());
