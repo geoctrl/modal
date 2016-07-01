@@ -29,7 +29,7 @@ body.__body-modal-active {
 	right: 0;
 	bottom: 0;
 	margin: 0 auto;
-	overflow-y: scroll;
+	overflow-y: auto;
 
 	&:focus {
 		box-shadow: none;

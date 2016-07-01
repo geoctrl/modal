@@ -138,6 +138,6 @@ export function getScrollbarWidth(body) {
 	var widthWithScroll = inner.offsetWidth;
 	outer.parentNode.removeChild(outer);
 	let fullWidth = window.getComputedStyle(body[0]).width
-	console.log(fullWidth)
+	// console.log(fullWidth)
 	return body[0].scrollWidth == body[0].clientWidth ? 0 : widthNoScroll - widthWithScroll;
 }
