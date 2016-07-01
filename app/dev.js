@@ -4,8 +4,6 @@ export default function(app) {
 		$scope.open = () => {
 			tsModalService.open({
 				directive: 'testDir',
-				closeBackdrop: false,
-				closeEscape: false,
 				resolve: {
 					file: function() {
 						return 'super-duper.css'

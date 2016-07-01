@@ -81,23 +81,31 @@ export function cleanValidateOptions(options, $injector) {
 }
 
 
+/**
+ * Resolve stuff
+ * wraps a promise around any type of thing
+ * and won't return until all promises resolve
+ * @param $q
+ * @param obj
+ * @returns {Promise}
+ */
 export function resolve($q, obj) {
 	let promises = [];
 	let names = [];
 
+	// wrap stuff in promises
 	for (let r in obj) {
 		names.push(r);
-		if (typeof obj[r] === 'function') {
-			promises.push($q(resolve => {
-				resolve(obj[r]())
-			}));
-		} else {
-			promises.push($q(resolve => {
+		promises.push($q(resolve => {
+			if (typeof obj[r] === 'function') {
+				resolve(obj[r]());
+			} else {
 				resolve(obj[r]);
-			}))
-		}
+			}
+		}));
 	}
 
+	// send back promise where data is the object unwrapped
 	return $q.all(promises).then(
 			res => {
 				let o = {};
@@ -107,4 +115,29 @@ export function resolve($q, obj) {
 				return o;
 			}
 	);
+}
+
+
+/**
+ * get scroll bar width
+ * @returns {number}
+ */
+export function getScrollbarWidth(body) {
+	var outer = document.createElement("div");
+	outer.style.visibility = "hidden";
+	outer.style.width = "100%";
+	document.body.appendChild(outer);
+
+	var widthNoScroll = outer.offsetWidth;
+	outer.style.overflow = "scroll";
+
+	var inner = document.createElement("div");
+	inner.style.width = "100%";
+	outer.appendChild(inner);
+
+	var widthWithScroll = inner.offsetWidth;
+	outer.parentNode.removeChild(outer);
+	let fullWidth = window.getComputedStyle(body[0]).width
+	console.log(fullWidth)
+	return body[0].scrollWidth == body[0].clientWidth ? 0 : widthNoScroll - widthWithScroll;
 }

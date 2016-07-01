@@ -44,7 +44,7 @@ if (process.env.NODE_ENV === 'production') {
 	config.output.filename = 'index.js';
 	config.output.libraryTarget = 'umd';
 	config.devtool = 'source-map';
-	// config.plugins.push(new webpack.optimize.UglifyJsPlugin());
+	config.plugins.push(new webpack.optimize.UglifyJsPlugin());
 }
 
 module.exports = config;

@@ -89,21 +89,15 @@ return /******/ (function(modules) { // webpackBootstrap
 		    modalArray = [],
 		    isInit = true,
 		    isDestroy = false,
-	
-	
-		// elements
-		body = angular.element($document[0].body),
+		    body = angular.element($document[0].body),
+		    bodyClass = '__body-modal-active',
 		    containerEl = angular.element('<div class="modal-container"></div>'),
 		    backdropEl = angular.element('<div class="modal-backdrop"></div>'),
 		    modalContainEl = angular.element('<div class="modal-contain" tabindex="0"></div>'),
 		    modalEl = angular.element('<div class="modal"></div>');
 	
-		function currentModal() {
-			return modalArray[modalArray.length - 1];
-		}
-	
 		/**
-	  * initialize
+	  * initialize (only called once)
 	  * no modals present, build structure
 	  */
 		function init() {
@@ -112,32 +106,32 @@ return /******/ (function(modules) { // webpackBootstrap
 		}
 	
 		/**
+	  * Get Current Modal
+	  * @returns Modal {*} || null
+	  */
+		function getCurrentModal() {
+			return modalArray.length ? modalArray[modalArray.length - 1] : null;
+		}
+	
+		/**
 	  * destroy
-	  * done with modals, clean up
-	  * assumes only one modal is left
+	  * remove backdrop and final cleanup
 	  */
 		function destroy(modal) {
 			var finalDestroy = function finalDestroy() {
+				toggleBody();
 				containerEl[0].style.display = 'none';
-				modalArray = [];
+				modalArray = []; // empty modal array
 				isInit = true;
 				isDestroy = false;
-				$scope.$destroy();
+				$scope.$destroy(); // destroy $scope
 				$scope = null;
 			};
 	
-			if (modal.data._options.animate && Velocity) {
-				Velocity(backdropEl, {
-					opacity: 0
-				}, {
-					display: 'none',
-					easing: 'easeInOutQuad',
-					duration: modal.data._options.animateDuration,
-					complete: function complete() {
-						if ($scope) {
-							finalDestroy();
-						}
-					}
+			// remove backdrop from view & initiate final cleanup
+			if (checkAnimate(modal)) {
+				animateBackdropOut(modal).then(function (res) {
+					return finalDestroy();
 				});
 			} else {
 				backdropEl[0].style.display = 'none';
@@ -153,34 +147,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	  * @param data
 	  */
 		function buildModal(modal, data) {
+			data = data || {}; // if data isn't set
+			data.tsModalReady = false; // modal helper (animation is done and modal is ready)
+			$scope.data[modal._id] = data; // set data to unique item in object
 	
-			// if data isn't set
-			data = data || {};
-	
-			// add modal helpers to facilitate third-party component quirks
-			data.tsModalReady = false; // modal is initiated and animation is complete
-	
-			// set data
-			$scope.data[modal._id] = data;
-	
-			// create new element
 			var newModalContainEl = angular.copy(modalContainEl),
-			    newModalEl = angular.copy(modalEl),
-			    directiveEl = angular.element('<' + (0, _utils.dashCase)(modal._options.directive) + '></' + (0, _utils.dashCase)(modal._options.directive) + '>');
+			    // element needed to control z-index with backdrop
+			newModalEl = angular.copy(modalEl),
+			    // element to be animated
+			directiveEl = angular.element( // dynamically building directive
+			'<' + (0, _utils.dashCase)(modal._options.directive) + '>\n\t\t\t\t\t\t </' + (0, _utils.dashCase)(modal._options.directive) + '>');
 	
-			// apply data to directive
+			// apply attributes to directive element - assign each object item _id
 			angular.forEach(data, function (item, key) {
 				directiveEl.attr((0, _utils.dashCase)(key), 'data[\'' + modal._id + '\'].' + key);
 			});
 	
-			// set size
-			newModalContainEl.addClass('modal-contain--' + modal._options.size);
-	
-			// set display
-			newModalContainEl.addClass('modal-contain--' + modal._options.display);
-	
-			// set z-index
-			newModalContainEl[0].style.zIndex = modalArray.length * 2 + 1;
+			// apply options
+			newModalContainEl.addClass('modal-contain--' + modal._options.size); // set size
+			newModalContainEl.addClass('modal-contain--' + modal._options.display); // set display
+			newModalContainEl[0].style.zIndex = modalArray.length * 2 + 1; // set z-index
 	
 			// add modal to modal array
 			modalArray.push({
@@ -198,147 +184,149 @@ return /******/ (function(modules) { // webpackBootstrap
 			containerEl.append(newModalContainEl);
 			$compile(newModalContainEl)($scope);
 	
-			// show
-			controlIn(currentModal());
+			controlIn(getCurrentModal()); // show
 		}
 	
 		/**
 	  * Control In
+	  * control what happens when the modal is Opened
 	  * @param modal
 	  */
 		function controlIn(modal) {
+			backdropEl[0].style.zIndex = modalArray.length * 2 - 2; // set backdrop z-index
+			containerEl[0].style.display = 'block'; // display some elements
 	
-			// set backdrop z-index
-			backdropEl[0].style.zIndex = modalArray.length * 2 - 2;
-	
-			// display some elements
-			containerEl[0].style.display = 'block';
-	
-			// if animation is available and set to true
-			if (modal.data._options.animate && Velocity) {
+			// bring modal into view
+			if (checkAnimate(modal)) {
 				if (isInit) {
-					// if this is the first modal, fade in the backdrop
-					Velocity(backdropEl, {
-						opacity: [1, 0]
-					}, {
-						display: 'block',
-						easing: 'easeOutCubic',
-						duration: modal.data._options.animateDuration
-					});
+					toggleBody(); // toggle body classes and stuff
+					animateBackdropIn(modal); // animate backdrop in
 				}
-	
-				Velocity(modal.el, {
-					opacity: [1, .5],
-					translateY: [0, '-120%']
-				}, {
-					display: 'block',
-					delay: 100,
-					easing: 'easeOutCubic',
-					duration: modal.data._options.animateDuration,
-					complete: function complete() {
-						if (isInit) {
-							addEvents();
-							setFocus(modal.containEl);
-						}
-						isInit = false;
-						// set modal to ready
-						$scope.$applyAsync(function () {
-							$scope.data[modal.data._id].tsModalReady = true;
-						});
-					}
-				});
+				animateModalIn(modal); // animate modal in
 			} else {
-				modal.el[0].style.display = 'block';
-				backdropEl[0].style.display = 'block';
-				setFocus(modal.containEl);
-	
-				if (modal.data._options.animate && !Velocity) {
-					console.warn(_utils.label + ' Velocity library is not available - cannot animate');
+					modal.el[0].style.display = 'block'; // manually show modal
+					backdropEl[0].style.display = 'block'; // manually show backdrop
+					setFocus(modal.containEl); // focus on modal
 				}
-			}
+			isInit = false; // done initializing
 		}
 	
 		/**
 	  * Control Out
+	  * control what happens when a modal is closed
 	  * @param modal
 	  */
 		function controlOut(modal) {
+			backdropEl[0].style.zIndex = modalArray.length * 2 - 2; // change backdrop z-index position
+			modal.containEl[0].removeEventListener('click', clickEventHandler); // remove
 	
-			backdropEl[0].style.zIndex = modalArray.length * 2 - 2;
-			modal.containEl[0].removeEventListener('click', clickEventHandler);
-	
-			// wait for duration/2 to see if another modal is starting
-			// if not, destroy
+			// if last modal, wait for duration/2 to see if another modal is starting - if not, destroy
 			$timeout(function () {
-				if (!modalArray.length) {
-					isDestroy = true;
-					removeEvents();
-					destroy(modal);
+				if (modalArray.length == 0) {
+					isDestroy = true;removeEvents();destroy(modal);
 				}
 			}, modal.data._options.animateDuration / 2);
 	
-			if (modal.data._options.animate && Velocity) {
-				Velocity(modal.el, {
-					opacity: .6,
-					translateY: '-120%'
+			// remove modal from view
+			checkAnimate(modal) ? animateModalOut(modal) : modal.containEl.remove();
+		}
+	
+		function animateModalIn(modal) {
+			Velocity(modal.el, {
+				opacity: [1, .5],
+				translateY: [0, '-120%']
+			}, {
+				display: 'block',
+				delay: 100,
+				easing: 'easeOutCubic',
+				duration: modal.data._options.animateDuration,
+				complete: function complete() {
+					setFocus(modal.containEl); // focus on the modal container
+					$scope.$applyAsync(function () {
+						return $scope.data[modal.data._id].tsModalReady = true;
+					}); // modal helpers
+				}
+			});
+		}
+	
+		function animateModalOut(modal) {
+			Velocity(modal.el, {
+				opacity: .6,
+				translateY: '-120%'
+			}, {
+				display: 'none',
+				easing: 'easeInOutQuad',
+				duration: modal.data._options.animateDuration,
+				complete: function complete() {
+					return modal.containEl.remove();
+				}
+			});
+		}
+	
+		function animateBackdropIn(modal) {
+			Velocity(backdropEl, {
+				opacity: [1, 0]
+			}, {
+				display: 'block',
+				easing: 'easeOutCubic',
+				duration: modal.data._options.animateDuration
+			});
+		}
+	
+		function animateBackdropOut(modal) {
+			return $q(function (resolve, reject) {
+				Velocity(backdropEl, {
+					opacity: 0
 				}, {
 					display: 'none',
 					easing: 'easeInOutQuad',
 					duration: modal.data._options.animateDuration,
 					complete: function complete() {
-						modal.containEl.remove();
+						return $scope ? resolve() : reject();
 					}
 				});
-			} else {
-				modal.containEl.remove();
-				if (modal.data._options.animate && !Velocity) {
-					console.warn(_utils.label + ' Velocity library is not available - cannot animate');
-				}
+			});
+		}
+	
+		function toggleBody() {
+			body[isInit ? 'addClass' : 'removeClass'](bodyClass);
+			body[0].style.paddingRight = (isInit ? (0, _utils.getScrollbarWidth)() : 0) + 'px';
+		}
+	
+		/**
+	  * check if animation is possible
+	  * @param modal
+	  * @returns {boolean}
+	  */
+		function checkAnimate(modal) {
+			if (!Velocity) {
+				console.warn(_utils.label + ' Velocity library is not available - cannot animate');return false;
+			} else if (modal.data._options.animate) {
+				return true;
 			}
 		}
 	
-		function keyPressHandler(e) {
-			if (e.keyCode == 27 && currentModal().data._options.closeEscape) {
-				cancel();
-			}
-		}
-	
-		function clickEventHandler(e) {
-			var modal = currentModal();
-			if (e.target == modal.containEl[0] && modal.data._options.closeBackdrop && !isInit) {
-				cancel();
-			}
-		}
-	
+		/**
+	  * GO
+	  * both submit and cancel remove the modal,
+	  * the only difference is one is 'resolved' and the other is 'rejected'
+	  * @param data
+	  * @param type
+	  */
 		function go(data, type) {
-			var modal = currentModal();
+			var modal = getCurrentModal(); // get current/visible modal
 			if (modal) {
-				modalArray.pop();
-				if (type == 'submit') {
-					modal.data.getPromise().resolve(data);
-				} else {
-					modal.data.getPromise().reject(data);
-				}
-				controlOut(modal);
+				modalArray.pop(); // remove modal from modalArray
+				controlOut(modal); // handle modal elements/events etc
+				modal.data.getPromise()[type == 'submit' ? 'resolve' : 'reject'](data); // resolve or reject
 			}
 		}
 	
-		function cancel(data) {
-			go(data, 'cancel');
-		}
-	
-		function submit(data) {
-			go(data, 'submit');
-		}
-	
-		function addEvents() {
-			$document[0].addEventListener('keydown', keyPressHandler);
-		}
-	
-		function removeEvents() {
-			$document[0].removeEventListener('keydown', keyPressHandler);
-		}
-	
+		/**
+	  * set Focus
+	  * once the modal is displayed, set focus
+	  * @param el
+	  */
 		function setFocus(el) {
 			var inputWithAutofocus = el[0].querySelector('[autofocus]');
 			if (inputWithAutofocus) {
@@ -348,38 +336,69 @@ return /******/ (function(modules) { // webpackBootstrap
 			}
 		}
 	
+		// global event handlers
+		var addEvents = function addEvents() {
+			return $document[0].addEventListener('keydown', keyPressHandler);
+		};
+		var removeEvents = function removeEvents() {
+			return $document[0].removeEventListener('keydown', keyPressHandler);
+		};
+		var keyPressHandler = function keyPressHandler(e) {
+			if (e.keyCode == 27 && getCurrentModal().data._options.closeEscape) {
+				go(null, 'cancel');
+			}
+		};
+		var clickEventHandler = function clickEventHandler(e) {
+			var modal = getCurrentModal();
+			if (e.target == modal.containEl[0] && modal.data._options.closeBackdrop && !isInit) {
+				go(null, 'cancel');
+			}
+		};
+	
 		/**
 	  * public API
 	  */
 		return {
+			/**
+	   * open modal
+	   * @param opts (opts.directive is required)
+	   * @returns {Promise} Modal
+	   */
+	
 			open: function open(opts) {
 				if (!$scope) {
-					$scope = $rootScope.$new();
-					$scope.data = {};
+					$scope = $rootScope.$new(); // create a new scope
+					$scope.data = {}; // added data into the scope
+					addEvents(); // start global events
 				}
 	
 				// create new modal
-				var newModal = new _modalClass2.default(opts, $injector);
-	
-				newModal.setPromise($q.defer());
-	
-				// init if there's no elements
-				if (isInit) init();
+				var newModal = new _modalClass2.default(opts, $injector); // create new modal class
+				newModal.setPromise($q.defer()); // set deferred promise
+				if (isInit) init(); // initialize
 	
 				if (opts.resolve) {
+					// if there's stuff to resolve, so that before building modal
 					(0, _utils.resolve)($q, opts.resolve).then(function (res) {
-						buildModal(newModal, res);
+						return buildModal(newModal, res);
 					});
 				} else {
-					buildModal(newModal);
+					buildModal(newModal); // else just build the modal
 				}
-	
-				return newModal.getPromise().promise;
+				return newModal.getPromise().promise; // return promise
 			},
 	
 	
-			submit: submit,
-			cancel: cancel
+			/**
+	   * submit and cancel
+	   * @param data
+	   */
+			submit: function submit(data) {
+				go(data, 'submit');
+			},
+			cancel: function cancel(data) {
+				go(data, 'cancel');
+			}
 		};
 	}];
 	
@@ -410,6 +429,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.dashCase = dashCase;
 	exports.cleanValidateOptions = cleanValidateOptions;
 	exports.resolve = resolve;
+	exports.getScrollbarWidth = getScrollbarWidth;
 	
 	var _defaultOptions = __webpack_require__(3);
 	
@@ -493,27 +513,36 @@ return /******/ (function(modules) { // webpackBootstrap
 		return options;
 	}
 	
+	/**
+	 * Resolve stuff
+	 * wraps a promise around any type of thing
+	 * and won't return until all promises resolve
+	 * @param $q
+	 * @param obj
+	 * @returns {Promise}
+	 */
 	function resolve($q, obj) {
 		var promises = [];
 		var names = [];
 	
+		// wrap stuff in promises
+	
 		var _loop = function _loop(r) {
 			names.push(r);
-			if (typeof obj[r] === 'function') {
-				promises.push($q(function (resolve) {
+			promises.push($q(function (resolve) {
+				if (typeof obj[r] === 'function') {
 					resolve(obj[r]());
-				}));
-			} else {
-				promises.push($q(function (resolve) {
+				} else {
 					resolve(obj[r]);
-				}));
-			}
+				}
+			}));
 		};
 	
 		for (var r in obj) {
 			_loop(r);
 		}
 	
+		// send back promise where data is the object unwrapped
 		return $q.all(promises).then(function (res) {
 			var o = {};
 			for (var i = 0; i < res.length; i++) {
@@ -521,6 +550,29 @@ return /******/ (function(modules) { // webpackBootstrap
 			}
 			return o;
 		});
+	}
+	
+	/**
+	 * get scroll bar width
+	 * @returns {number}
+	 */
+	function getScrollbarWidth() {
+		var outer = document.createElement("div");
+		outer.style.visibility = "hidden";
+		outer.style.width = "100px";
+		document.body.appendChild(outer);
+	
+		var widthNoScroll = outer.offsetWidth;
+		outer.style.overflow = "scroll";
+	
+		var inner = document.createElement("div");
+		inner.style.width = "100%";
+		outer.appendChild(inner);
+	
+		var widthWithScroll = inner.offsetWidth;
+		outer.parentNode.removeChild(outer);
+	
+		return widthNoScroll - widthWithScroll;
 	}
 
 /***/ },
