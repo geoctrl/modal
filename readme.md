@@ -37,17 +37,16 @@ This module was purposefully built to be a dependency in an Angular application,
 
 Also, the package needs to be `import`ed, so some sort of module loader is required (webpack, browserfy, systemJS, etc).
 
-    let app = angular.module('app', []);
-
 import the module
 
     import modal from 'ts-modal';
 
 initialize and pass in your ng-module (app)
 
+    let app = angular.module('app', []);
     modal(app);
 
-now the service is available to be injected
+now the service (`tsModalService`) is available to be injected
 
     app.controller('ctrl', function(tsModalService) {
       tsModalService.open({
