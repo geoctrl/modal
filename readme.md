@@ -1,4 +1,4 @@
-# Angular Modal Service (tsModalService)
+# ts-modal (An Angular Service for directives)
 
 Loosely based off of Angular Bootstrap Modal
 
@@ -10,8 +10,6 @@ Why build a new modal service when the bootstrap one works fine?
 
 **Problem**: Angular-Bootstrap's modal is messy. Developers are required to use a controller/template system, which means if you want to modularize your component to be used in a modal (using a directive), you'd have to pass data through the modal `resolve`, include it in the controller `$scope`, then pass each variable into attributes on the directive element, and lastly, you'll need to handle them all again in the directive.
 Also, if you want to store your controller/template elsewhere and pass references in, the two aren't inherently paired (unlike directives). 
-
-It uses a controller/template setup that requires separate dependencies to be setup and stored. The issue with this is that the controller and the template are not inherently paired. You're required to tell the modal service what controller and what template to use. **Messy.**
 
 **Solution**: This component uses directives instead. You explicitly declare the directive name, and the component is compiled inside the modal:
 
@@ -49,9 +47,6 @@ initialize and pass in your ng-module (app)
 
 now the service is available to be injected
 
-
-    // Example of opening a modal:
-    
     app.controller('ctrl', function(tsModalService) {
       tsModalService.open({
           directive: 'directiveName',
@@ -61,9 +56,15 @@ now the service is available to be injected
           }
       });
     });
-    
-    // Example of handling the modal inside declared directive:
-    
+
+The modal service generates the following html behind the scenes and passes in the resolved data as unique identifiers:
+
+    <div class="ts-modal">
+        <directive-name data="data['id']" cool-stuff="data['id']"></directive-name>
+    </div>
+
+Example of handling the modal inside declared directive:
+
     app.directive('directiveName', function() {
       return {
         restrict: 'E',                     // "Element" is required
@@ -86,7 +87,7 @@ Include the SCSS file in your styles:
 
 ### .open()
 
-Open a new modal. You can have an unlimited amount of modals open at the same time, but keep in mind that **.submit()** and **.cancel()** methods only apply to the most recent modal.
+Open a new modal. You can have an unlimited amount of modals open at the same time, but keep in mind that **.submit()** and **.cancel()** methods only apply to the most recent or 'active' modal.
 
 Returns a promise that is resolved when **.submit()** is is called, and rejected when **.cancel()** is called.
 
@@ -149,6 +150,29 @@ Pass data back through the `Promise.resolve()` and `Promise.reject()` callbacks.
         function cancelCb(data) {} // cancel
     );
 
+### Modal Helpers
+
+It became necessary, due to rendering issues with other components, to create modal helpers that you can use to get helpful hints about the modal status and condition. Although only one helper is available now, more can be added as the need arises.
+
+#### modalReady `Boolean`
+
+An attribute added to the scope that tells you when the modal is built and the animation is complete.
+
+    app.directive('directiveName', function() {
+      return {
+        restrict: 'E',
+        scope: {
+          modalReady: '='      // attribute ready to be added into scope
+        },
+        controller: function($scope) {
+          $scope.$watch('modalReady', function(newVal) {
+            if (newVal) {
+              console.log('modal is built and animation is complete');
+            }
+          });
+        }
+      }
+    });
 
 ----
 
