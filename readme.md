@@ -33,7 +33,9 @@ There are currently only 2 ways to use this module:
 
 ## Using the module as a dependency
 
-This module was purposefully built to be a dependency in an Angular application, so the ng-module needs to be passed in as an argument:
+This module was purposefully built to be a dependency in an Angular application, so the ng-module needs to be passed in as an argument.
+
+Also, the package needs to be `import`ed, so some sort of module loader is required (webpack, browserfy, systemJS, etc).
 
     let app = angular.module('app', []);
 
