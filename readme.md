@@ -22,7 +22,7 @@ Why build a new modal service when the bootstrap one works fine?
 
 ----
 
-## Setup
+## Dev Setup
 
  - clone repo
  - install global dependencies `npm install webpack webpack-dev-server`
@@ -33,15 +33,15 @@ Why build a new modal service when the bootstrap one works fine?
  - `npm start`
  - go to `localhost:8080` in your browser
 
-## Use
+## Using the module as a dependency
 
-This module was purposefully built to be a dependency in an Angular, so the ng-module needs to be passed in:
+This module was purposefully built to be a dependency in an Angular application, so the ng-module needs to be passed in as an argument:
 
-    let app = angular.module('tuteApp', []);
+    let app = angular.module('app', []);
     
 import the module
 
-    import modal from '@tutegenomics/modal';
+    import modal from 'ts-modal';
     
 initialize and pass in your ng-module (app)
 
