@@ -1,4 +1,4 @@
-# Angular Modal Service (modalService)
+# Angular Modal Service (tsModalService)
 ------
 
 Loosely based off of Angular Bootstrap Modal
@@ -49,8 +49,8 @@ initialize and pass in your ng-module (app)
     
 now the service is available to be injected
 
-    app.controller('ctrl', function(modalService) {
-        modalService.open({
+    app.controller('ctrl', function(tsModalService) {
+        tsModalService.open({
             directive: 'directiveName'
         });
     });
@@ -68,7 +68,7 @@ Open a new modal. You can have an unlimited amount of modals open at the same ti
 
 Returns a promise that is resolved when **.submit()** is is called, and rejected when **.cancel()** is called.
 
-    let modalPromise = modalService.open({
+    let modalPromise = tsModalService.open({
         directive: 'directiveName',
         resolve: {
             data: Promise.resolve('data')
@@ -103,14 +103,14 @@ Pass data back through the `Promise.resolve()` and `Promise.reject()` callbacks.
 
     // from within the directive:
     $scope.submit = function() {
-        modalService.submit({data: 'data'});
+        tsModalService.submit({data: 'data'});
     };
     $scope.cancel = function() {
-        modalService.cancel({data: 'data'});
+        tsModalService.cancel({data: 'data'});
     };
 
     // modal promise resolves or rejects
-    modalPromise.then(
+    tsModalService.then(
         function submitCb(data) {},
         function cancelCb(data) {}
     );
