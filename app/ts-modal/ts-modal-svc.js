@@ -9,12 +9,16 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 			modalArray = [],
 			isInit = true,
 			isDestroy = false,
-			body = angular.element($document[0].body),
 			bodyClass = '__body-modal-active',
+
+			// elements and templates
+			body = angular.element($document[0].body),
 			containerEl = angular.element(`<div class="modal-container"></div>`),
 			backdropEl = angular.element(`<div class="modal-backdrop"></div>`),
 			modalContainEl = angular.element(`<div class="modal-contain" tabindex="0"></div>`),
 			modalEl = angular.element(`<div class="modal"></div>`);
+
+
 
 	/**
 	 * initialize (only called once)
@@ -25,6 +29,8 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		body.append(containerEl);
 	}
 
+
+
 	/**
 	 * Get Current Modal
 	 * @returns Modal {*} || null
@@ -34,6 +40,8 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 				? modalArray[modalArray.length-1]
 				: null;
 	}
+
+
 
 	/**
 	 * destroy
@@ -52,15 +60,18 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 
 		// remove backdrop from view & initiate final cleanup
 		if (checkAnimate(modal)) {
-			animateBackdropOut(modal).then(res => finalDestroy());
+			animateBackdropOut(modal).then(res => finalDestroy()); // wait till animation finishes
 		} else {
 			backdropEl[0].style.display = 'none';
 			if ($scope) { finalDestroy() }
 		}
 	}
 
+
+
 	/**
 	 * build modal
+	 * add elements, compile and add to DOM
 	 * @param modal
 	 * @param data
 	 */
@@ -104,6 +115,8 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		controlIn(getCurrentModal()); // show
 	}
 
+
+
 	/**
 	 * Control In
 	 * control what happens when the modal is Opened
@@ -128,6 +141,8 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		isInit = false;                           // done initializing
 	}
 
+
+
 	/**
 	 * Control Out
 	 * control what happens when a modal is closed
@@ -146,6 +161,12 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		checkAnimate(modal) ? animateModalOut(modal) : modal.containEl.remove();
 	}
 
+
+
+	/**
+	 * Animate Modal In
+	 * @param modal
+	 */
 	function animateModalIn(modal) {
 		Velocity(modal.el, {
 			opacity: [1, .5],
@@ -162,6 +183,12 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		})
 	}
 
+
+
+	/**
+	 * Animate Modal Out
+	 * @param modal
+	 */
 	function animateModalOut(modal) {
 		Velocity(modal.el, {
 			opacity: .6,
@@ -174,6 +201,12 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		});
 	}
 
+
+
+	/**
+	 * Animate Backdrop In
+	 * @param modal
+	 */
 	function animateBackdropIn(modal) {
 		Velocity(backdropEl, {
 			opacity: [1, 0]
@@ -184,6 +217,14 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		});
 	}
 
+
+
+	/**
+	 * Animate Backdrop Out
+	 * Destroying relies on this component being finished
+	 * @param modal
+	 * @returns {Promise}
+	 */
 	function animateBackdropOut(modal) {
 		return $q((resolve, reject) => {
 			Velocity(backdropEl, {
@@ -197,10 +238,18 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		});
 	}
 
+
+
+	/**
+	 * toggle body class
+	 * mimics scrollbar spacing
+	 */
 	function toggleBody() {
 		body[0].style.paddingRight = `${isInit ? getScrollbarWidth(body) : 0}px`;
 		body[isInit ? 'addClass' : 'removeClass'](bodyClass);
 	}
+
+
 
 	/**
 	 * check if animation is possible
@@ -211,6 +260,8 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		if (!Velocity) { console.warn(`${label} Velocity library is not available - cannot animate`); return false; }
 		else if (modal.data._options.animate) { return true; }
 	}
+
+
 
 	/**
 	 * GO
@@ -228,6 +279,8 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		}
 	}
 
+
+
 	/**
 	 * set Focus
 	 * once the modal is displayed, set focus
@@ -238,7 +291,11 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		if (inputWithAutofocus) { inputWithAutofocus.focus(); } else { el[0].focus() }
 	}
 
-	// global event handlers
+
+
+	/**
+	 * EVENTS AND HANDLERS
+	 */
 	let addEvents = () => $document[0].addEventListener('keydown', keyPressHandler);
 	let removeEvents = () => $document[0].removeEventListener('keydown', keyPressHandler);
 	let keyPressHandler = (e) => {
@@ -253,8 +310,10 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		}
 	};
 
+
+
 	/**
-	 * public API
+	 * PUBLIC API
 	 */
 	return {
 		/**
@@ -275,7 +334,7 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 			if (isInit) init();                             // initialize
 
 			if (opts.resolve) {
-				// if there's stuff to resolve, so that before building modal
+				// if there's stuff to resolve, do that before building modal
 				resolve($q, opts.resolve).then(res => buildModal(newModal, res) );
 			} else {
 				buildModal(newModal); // else just build the modal
