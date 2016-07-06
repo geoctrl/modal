@@ -1,5 +1,4 @@
 # Angular Modal Service (tsModalService)
-------
 
 Loosely based off of Angular Bootstrap Modal
 
@@ -9,9 +8,16 @@ Why build a new modal service when the bootstrap one works fine?
 
 ### Modularity
 
-**Problem**: Bootstrap uses a controller/template setup that requires separate dependencies to be setup and stored. The issue with this is that the controller and the template are not inherently paired. You're required to tell the modal service what controller and what template to use.
+**Problem**: Angular-Bootstrap's modal is messy. Developers are required to use a controller/template system, which means if you want to modularize your component to be used in a modal (using a directive), you'd have to pass data through the modal `resolve`, include it in the controller `$scope`, then pass each variable into attributes on the directive element, and lastly, you'll need to handle them all again in the directive.
+Also, if you want to store your controller/template elsewhere and pass references in, the two aren't inherently paired (unlike directives). 
 
-**Solution**: This component uses directives instead. You explicitly declare the directive name, and the component is compiled inside the modal.
+It uses a controller/template setup that requires separate dependencies to be setup and stored. The issue with this is that the controller and the template are not inherently paired. You're required to tell the modal service what controller and what template to use. **Messy.**
+
+**Solution**: This component uses directives instead. You explicitly declare the directive name, and the component is compiled inside the modal:
+
+    tsModalService.open({
+      directive: 'directive-name'
+    });
 
 ### Animation
 
@@ -20,39 +26,55 @@ Why build a new modal service when the bootstrap one works fine?
 **Solution**: Use optional dependency VelocityJS for animations. Allows for more control.
 
 
-----
+## Install
 
-## Dev Setup
+There are currently only 2 ways to use this module:
 
- - clone repo
- - install global dependencies `npm install webpack webpack-dev-server`
- - install local dependencies (in repo root) `npm install`
-
-## Run Dev Environment
-
- - `npm start`
- - go to `localhost:8080` in your browser
+ - NPM: `npm install ts-modal --save`
+ - Clone repo: Use the files in the `dist` folder
 
 ## Using the module as a dependency
 
 This module was purposefully built to be a dependency in an Angular application, so the ng-module needs to be passed in as an argument:
 
     let app = angular.module('app', []);
-    
+
 import the module
 
     import modal from 'ts-modal';
-    
+
 initialize and pass in your ng-module (app)
 
     modal(app);
-    
+
 now the service is available to be injected
 
+
+    // Example of opening a modal:
+    
     app.controller('ctrl', function(tsModalService) {
-        tsModalService.open({
-            directive: 'directiveName'
-        });
+      tsModalService.open({
+          directive: 'directiveName',
+          resolve: {
+              data: Promise.resolve('data'),
+              coolStuff: 'I am Legend'
+          }
+      });
+    });
+    
+    // Example of handling the modal inside declared directive:
+    
+    app.directive('directiveName', function() {
+      return {
+        restrict: 'E',                     // "Element" is required
+        scope: {
+          data: '=',                       // data is passed in with two-way binding,
+          coolStuff: '='                   // all items in the 'resolve' must be declared
+        },
+        controller: function($scope) {
+          console.log($scope.data, $scope.coolStuff);  // you're data is available
+        }
+      };
     });
 
 Include the SCSS file in your styles:
@@ -68,10 +90,11 @@ Open a new modal. You can have an unlimited amount of modals open at the same ti
 
 Returns a promise that is resolved when **.submit()** is is called, and rejected when **.cancel()** is called.
 
-    let modalPromise = tsModalService.open({
+    tsModalService.open({
         directive: 'directiveName',
         resolve: {
-            data: Promise.resolve('data')
+            data: Promise.resolve('data'),
+            coolStuff: 'I am Legend'
         },
         size: 'medium', // (small|medium|large)
         display: 'notification', // (component|notification)
@@ -80,7 +103,6 @@ Returns a promise that is resolved when **.submit()** is is called, and rejected
         animate: true,
         animateDuration: 400, // velocityJS required
     });
-
 
 #### options
 
@@ -101,16 +123,42 @@ Returns a promise that is resolved when **.submit()** is is called, and rejected
 
 Pass data back through the `Promise.resolve()` and `Promise.reject()` callbacks.
 
-    // from within the directive:
-    $scope.submit = function() {
-        tsModalService.submit({data: 'data'});
-    };
-    $scope.cancel = function() {
-        tsModalService.cancel({data: 'data'});
-    };
+    app.directive('directiveName', function() {
+      return {
+        restrict: 'E',     // "Element" is required
+        scope: {},         // resolve data is passed into the scope
+        controller: function($scope) {
+          console.log($scope.data, $scope.coolStuff);  // you're data is available
+          
+          // submit
+          $scope.submit = function() {
+            tsModalService.submit({data: 'data'});
+          };
+          
+          // cancel
+          $scope.cancel = function() {
+            tsModalService.cancel({data: 'data'});
+          };
+        }
+      };
+    });
 
     // modal promise resolves or rejects
-    tsModalService.then(
-        function submitCb(data) {},
-        function cancelCb(data) {}
+    tsModalService.open({...}).then(
+        function submitCb(data) {}, // submit
+        function cancelCb(data) {} // cancel
     );
+
+
+----
+
+## Dev Setup
+
+ - clone repo
+ - install global dependencies `npm install webpack webpack-dev-server`
+ - install local dependencies (in repo root) `npm install`
+
+## Run Dev Environment
+
+ - `npm start`
+ - go to `localhost:8080` in your browser
