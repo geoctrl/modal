@@ -1,4 +1,4 @@
-import { resolve, dashCase, label, getScrollbarWidth } from './_utils';
+import { resolveUtil, dashCase, label, getScrollbarWidth } from './_utils';
 import modalClass from './modal-class';
 
 export default function($rootScope, $document, $compile, $injector, $q, $timeout) {
@@ -27,6 +27,8 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 	function init() {
 		containerEl.append(backdropEl);
 		body.append(containerEl);
+		$scope = $rootScope.$new(); // create a new scope
+		$scope.data = {};           // added data into the scope
 	}
 
 
@@ -48,23 +50,16 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 	 * remove backdrop and final cleanup
 	 */
 	function destroy(modal) {
+
 		let finalDestroy = () => {
 			toggleBody();
 			containerEl[0].style.display = 'none';
 			modalArray = [];    // empty modal array
-			isInit = true;
 			isDestroy = false;
-			$scope.$destroy();  // destroy $scope
-			$scope = null;
 		};
 
 		// remove backdrop from view & initiate final cleanup
-		if (checkAnimate(modal)) {
-			animateBackdropOut(modal).then(res => finalDestroy()); // wait till animation finishes
-		} else {
-			backdropEl[0].style.display = 'none';
-			if ($scope) { finalDestroy() }
-		}
+		animateBackdropOut(modal).then(res => finalDestroy()); // wait till animation finishes
 	}
 
 
@@ -91,17 +86,17 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 			directiveEl.attr(dashCase(key), `data['${modal._id}'].${key}`);
 		});
 
-		// apply options
-		newModalContainEl.addClass(`modal-contain--${modal._options.size}`);      // set size
-		newModalContainEl.addClass(`modal-contain--${modal._options.display}`);   // set display
-		newModalContainEl[0].style.zIndex = (modalArray.length*2)+1;              // set z-index
-
 		// add modal to modal array
 		modalArray.push({
 			data: modal,
 			containEl: newModalContainEl,
 			el: newModalEl
 		});
+
+		// apply options
+		newModalContainEl.addClass(`modal-contain--${modal._options.size}`);      // set size
+		newModalContainEl.addClass(`modal-contain--${modal._options.display}`);   // set display
+		newModalContainEl[0].style.zIndex = (modalArray.length*2)+1;              // set z-index
 
 		// create click event for containEl
 		newModalContainEl[0].addEventListener('click', clickEventHandler);
@@ -123,7 +118,7 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 	 * @param modal
 	 */
 	function controlIn(modal) {
-		backdropEl[0].style.zIndex = (modalArray.length*2)-2; // set backdrop z-index
+		backdropEl[0].style.zIndex = (modalArray.length*2); // set backdrop z-index
 		containerEl[0].style.display = 'block';               // display some elements
 
 		// bring modal into view
@@ -149,16 +144,24 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 	 * @param modal
 	 */
 	function controlOut(modal) {
-		backdropEl[0].style.zIndex = (modalArray.length*2)-2;               // change backdrop z-index position
+		backdropEl[0].style.zIndex = (modalArray.length*2);               // change backdrop z-index position
 		modal.containEl[0].removeEventListener('click', clickEventHandler); // remove
 
-		// if last modal, wait for duration/2 to see if another modal is starting - if not, destroy
-		$timeout(() => {
-			if (modalArray.length==0) { isDestroy = true; removeEvents(); destroy(modal); }
-		}, modal.data._options.animateDuration/2);
+		// don't destroy unless there's no modals left
+		if (modalArray.length==0) {
+			// wait for duration/2 to see if another modal is starting
+			$timeout(() => {
+				// if there's another modal, don't destroy
+				if (modalArray.length==0) {
+					isDestroy = true;
+					removeEvents();
+					destroy(modal);
+				}
+			}, modal.data._options.animateDuration / 2);
+		}
 
 		// remove modal from view
-		checkAnimate(modal) ? animateModalOut(modal) : modal.containEl.remove();
+		animateModalOut(modal);
 	}
 
 
@@ -190,15 +193,23 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 	 * @param modal
 	 */
 	function animateModalOut(modal) {
-		Velocity(modal.el, {
-			opacity: .6,
-			translateY: `-120%`
-		}, {
-			display: 'none',
-			easing: 'easeInOutQuad',
-			duration: modal.data._options.animateDuration,
-			complete: () => modal.containEl.remove()
-		});
+		if (checkAnimate(modal)) {
+			Velocity(modal.el, {
+				opacity: .6,
+				translateY: `-120%`
+			}, {
+				display: 'none',
+				easing: 'easeInOutQuad',
+				duration: modal.data._options.animateDuration,
+				complete: () => {
+					modal.containEl.remove();
+					delete $scope.data[modal.data._id];
+				}
+			});
+		} else {
+			modal.containEl.remove();
+			delete $scope.data[modal.data._id];
+		}
 	}
 
 
@@ -226,16 +237,20 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 	 * @returns {Promise}
 	 */
 	function animateBackdropOut(modal) {
-		return $q((resolve, reject) => {
-			Velocity(backdropEl, {
-				opacity: 0
-			}, {
-				display: 'none',
-				easing: 'easeInOutQuad',
-				duration: modal.data._options.animateDuration,
-				complete: () => $scope ? resolve() : reject()
+		if (checkAnimate(modal)) {
+			return $q((resolve) => {
+				Velocity(backdropEl, {
+					opacity: 0
+				}, {
+					display: 'none',
+					easing: 'easeInOutQuad',
+					duration: modal.data._options.animateDuration,
+					complete: () => resolve()
+				});
 			});
-		});
+		} else {
+			return $q.resolve();
+		}
 	}
 
 
@@ -322,20 +337,19 @@ export default function($rootScope, $document, $compile, $injector, $q, $timeout
 		 * @returns {Promise} Modal
 		 */
 		open(opts) {
-			if (!$scope) {
-				$scope = $rootScope.$new(); // create a new scope
-				$scope.data = {};           // added data into the scope
-				addEvents();                // start global events
+			if (isInit) init();
+			if (!modalArray.length) {
+				isInit = true;
+				addEvents();
 			}
 
 			// create new modal
 			let newModal = new modalClass(opts, $injector); // create new modal class
 			newModal.setPromise($q.defer());                // set deferred promise
-			if (isInit) init();                             // initialize
 
 			if (opts.resolve) {
 				// if there's stuff to resolve, do that before building modal
-				resolve($q, opts.resolve).then(res => buildModal(newModal, res) );
+				resolveUtil($q, opts.resolve).then(res => buildModal(newModal, res) );
 			} else {
 				buildModal(newModal); // else just build the modal
 			}

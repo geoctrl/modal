@@ -1,4 +1,4 @@
-# ts-modal (An Angular Service for directives)
+# ts-modal [tsModalService] (An Angular Service for directives)
 
 Loosely based off of Angular Bootstrap Modal
 
@@ -128,7 +128,10 @@ Pass data back through the `Promise.resolve()` and `Promise.reject()` callbacks.
     app.directive('directiveName', function() {
       return {
         restrict: 'E',     // "Element" is required
-        scope: {},         // resolve data is passed into the scope
+        scope: {
+          data: '=',
+          coolStuff: '='
+        },
         controller: function($scope) {
           console.log($scope.data, $scope.coolStuff);  // you're data is available
           
@@ -153,7 +156,7 @@ Pass data back through the `Promise.resolve()` and `Promise.reject()` callbacks.
 
 ### Modal Helpers
 
-It became necessary, due to rendering issues with other components, to create modal helpers that you can use to get helpful hints about the modal status and condition. Although only one helper is available now, more can be added as the need arises.
+It became necessary, due to rendering issues with other components, to create modal helpers that you can use to get helpful hints about the modal status and condition. Although only one helper is available now, more can be added as needs arise.
 
 #### modalReady `Boolean`
 

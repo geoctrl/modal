@@ -89,7 +89,7 @@ export function cleanValidateOptions(options, $injector) {
  * @param obj
  * @returns {Promise}
  */
-export function resolve($q, obj) {
+export function resolveUtil($q, obj) {
 	let promises = [];
 	let names = [];
 

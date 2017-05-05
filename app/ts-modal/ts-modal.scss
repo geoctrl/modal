@@ -36,20 +36,14 @@ body.__body-modal-active {
 		outline: none;
 	}
 
-	&.modal-contain--small .modal {
-		width: 400px;
-	}
-
-	&.modal-contain--medium .modal {
-		width: 500px;
-	}
-
-	&.modal-contain--large {
-		width: 700px;
+	&.modal-contain--small .modal,
+	&.modal-contain--medium .modal,
+	&.modal-contain--large .modal {
+		width: auto;
 	}
 
 	&.modal-contain--notification .modal {
-		margin-bottom: 40px;
+		margin: 0 20px 40px 20px;
 	}
 
 	&.modal-contain--component .modal {
@@ -57,6 +51,24 @@ body.__body-modal-active {
 		border-radius: 4px;
 		margin-top: 40px;
 		margin-bottom: 40px;
+	}
+
+	@media (min-width: 768px) {
+		&.modal-contain--notification .modal {
+			margin: 0 auto 40px auto;
+		}
+
+		&.modal-contain--small .modal {
+			width: 400px;
+		}
+
+		&.modal-contain--medium .modal {
+			width: 500px;
+		}
+
+		&.modal-contain--large .modal {
+			width: 700px;
+		}
 	}
 }
 
